@@ -1,0 +1,27 @@
+Description:
+    The migration_branch generator creates a stub for a new database migration 
+    in the specified branch.
+
+    The generator takes a migration name as its argument.  The migration name 
+    may be given in CamelCase or under_score.
+
+    The generator creates a migration class in db/migrate/<branch> 
+    prefixed by its number in the queue.
+
+Syntax:
+    ./script/generate migration_branches migration_name branch_name [migration_name[:branch_name] [...]]
+
+Example:
+    > ./script/generate migration_branches create_sessions
+    Creates the migration: 
+        db/migrate/XXX_create_sessions.rb
+    
+    > ./script/generate migration_branches create_users users user_preferences:users
+    Creates the migration: 
+        db/migrate/users/001_create_users.rb
+        db/migrate/users/001_create_user_preferences.rb
+    
+    > ./script/generate migration_branches create_states lookup create_address_types:lookup
+    Creates the migrations (and directory if doesn't exist):
+    db/migrate/lookup/001_create_states.rb
+    db/migrate/lookup/002_create_address_types.rb

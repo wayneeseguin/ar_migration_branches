@@ -1,0 +1,210 @@
+===============================================================================
+= Migration Branches - Ruby on Rails Plugin
+= Author: Wayne E. Seguin
+===============================================================================
+
+===============================================================================
+= Repository URL for trunk
+===============================================================================
+
+https://secure.svnrepository.com/s_wayne/migration_branches/trunk
+
+===============================================================================
+= Rake Tasks
+===============================================================================
+Syntax:
+rake db:migrate [branches=branch1[:version][,branch2[:version][,...]]] 
+# allow for :sub_branches ???
+
+> rake db:migrate
+Migrates the default branch 'db/migrate' as the default behavior.
+
+> rake db:migrate branches=default
+This migrates only the default branch.
+
+> rake db:migrate branches=branch_1,branch_2
+This migrates the branch_1 and branch_2 but not the default branch.
+
+> rake db:migrate branches=branch_2:2,branch_1:1,default:3
+This migrates:
+  branch_2 to version 2
+  branch_1 to version 1
+  default to version 3
+
+> rake db:migrate branches=branch_1:4,branch_2:2 VERSION=5
+would be the same as
+> db:migrate branches=branch_1:4,branch_2:2,default:5
+This migrates:
+  branch_1 to version 4
+  branch_2 to version 2
+  default to version 5
+
+Notes:
+ - The 'default' branch is 'db/migrate'
+ - --trace works as expected
+ - VERSION=Y overrides default:X in the same line
+
+===============================================================================
+= Generators
+===============================================================================
+Syntax:
+./script/generate migration_name branch [migration_name[:branch] [...]]
+
+Examples:
+> ./script/generate migration_branches create_sessions
+or
+> ./script/generate migration create_sessions
+Creates a migration: 
+    db/migrate/XXX_create_sessions.rb
+
+> ./script/generate migration_branches create_users users user_preferences:users
+Creates the migration: 
+    db/migrate/users/001_create_users.rb
+    db/migrate/users/001_create_user_preferences.rb
+
+> ./script/generate migration_branches create_states lookup create_address_types:lookup
+Creates the migrations (and directory if doesn't exist):
+    db/migrate/lookup/001_create_states.rb
+    db/migrate/lookup/002_create_address_types.rb
+
+Notes:
+  - I would have liked to have overridden  the default migration generator 
+  however I did not have the time to look into how to do this.
+  
+===============================================================================
+= Goals
+===============================================================================
+  Add (via plugin initially, possibly a core patch eventually) the ability for Rails to handle multiple independent database migration "branches" hence the name "Migrations Branches" without disruption of any pre-existing functionality.
+
+ - The default is to grab all migrations (db/migrate/<branch>/) so that left unchanged everything is the same as it is now.
+
+ - Migrate specified branch versions, all branches by default.
+
+ - modify the rake task db:migrate to be able to specify the trac, perhaps:
+   > db:migrate:branch <branch_name>
+
+ - Allow passing of VERSION and any other parameters previously existing
+
+===============================================================================
+= What problems does migration_branches solve?
+===============================================================================
+ - This solves the issue of how to evolve and maintain an Integration database ( a database that integrates data from many applications ).
+
+ - This allows segmentation of a system's architecture so that one area of a system can be migrated without affecting any other area. For a typical example suppose that:
+    migration X changes table "a"
+    migration X + 1 changes table "b"
+    migration X + 2 changes table "c"
+    The migrations are performed and then it is realized that migration X needs to be fixed or eliminated. To do this by migrating down we would have to back out the changes to table "b" also which has nothing to do with table "a". The only other option to fix the system would be to create a migration X+3 that addresses the issue, if possible. By segregating the system into "branches" a developer who is working on one area of the system can create migrations for only that area and not worry about affecting any other area of the system.
+
+ - This will also reduce the number of times where developers have conflicting migraiton numbers.
+
+ - LOOKUP TABLES - QUESTIONS EXAMPLE
+
+===============================================================================
+Notes
+===============================================================================
+ - db/migrate/<branch>/ version number will be kept track of in 
+   "schema_info.version_<branch>"
+
+ - A new generator for branches:
+   script/generate migration_branch <migration_name> <branch_name>
+   will generate a migration:
+   db/migration/<branch>/xxx_migration_name
+
+===============================================================================
+Benefits
+===============================================================================
+ - This allows people who do branch based development to have a migration trac 
+   for each branch.
+
+ - For an application database ( one database for one application ) 
+   System tables, Lookup tables and User tables can be kept separate. 
+   Each one can be migrated up or down without effecting the others.
+
+ - For an integraiton database ( one database with many applications ) branches 
+   can be created to separate both application specific tables and tables 
+   corresponding to modules within an application.
+
+===============================================================================
+= Use Cases
+===============================================================================
+1. Application Database, so there is only one database for one application.
+
+Say a project has separate system, user and lookup data.
+The directory structure would then be:
+
+db/migrate
+          /001_create_sessions.rb
+
+db/migrate/user
+               /001_create_users.rb
+               /002_create_addresses.rb
+               /003_create_user_preferences.rb
+
+db/migrate/lookup
+                 /001_create_states.rb
+                 /002_create_address_types.rb
+
+After migrating, within
+So inside the schema_info table there will be the fields:
+value         :integer # Contains '1'
+value_user    :integer # Contains '3'
+value_lookup  :integer # Contains '2'
+
+
+# BEGIN DON'T READ THIS WITH THE EXAMPLE
+# If branch integrity is enabled:
+# tables_branches :longtext 
+#  A hash is stored here with branch => table name
+# So inside the tables_lookup for example we'd see:
+# states, addres_types, ...
+# and users might have:
+# users, addresses, ...
+# END DON'T READ THIS WITH THE EXAMPLE
+
+2. Integration Database, so there is only one database for many applications.
+
+
+Note: The choice of system as the default migration "branch" was arbitrary.
+
+===============================================================================
+= Implementation
+===============================================================================
+Every attempt to leave the existing migrate code in tact has been made, most 
+enhancements have been made to the ActiveRecord::Migrator class. The 
+rake db:migrate task has also been replaced with one that handles the branching
+logic. A migration branch generator has been added (incomplete).
+
+===============================================================================
+= Error Handling
+===============================================================================
+If a rake db:migrate is attempted from outside the rails_root directory an 
+error is raised.
+
+===============================================================================
+= Remaining Questions and ToDo's
+= O - Optional, R - Required, ? - Not sure, N - Not happening (yet)
+===============================================================================
+
+R - Add a generator that incorporates models... the default models do not
+    Account for brances... really should figure out how to overwrite the 
+    default generators.
+
+? - Is it necessary to enforce branch integrity, meaning tables belong to a 
+    branch and cannot be modified outside that branch?
+    Should this be a specifiable option in a config file?
+
+? - Should we build in one level of Recursion???
+	eg: db/migrate/system
+	    db/migrate/system/subsystem
+
+? - Improve the Error handling, If a migration fails migrate down?
+
+N - Does db::schema::dump need to be modified to account for these mappings?
+    I don't believe so, there is only one ( possibly ) field to keep track of 
+    these migrations.
+
+N - Is a new task to rebuild the schema_info tables based on values necessary?
+    > rake db:schema:rebuild_migration_branches ???
+    Again I don't thing so as I can't figure out what I meant by this question.
+
