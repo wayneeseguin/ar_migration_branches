@@ -1,8 +1,8 @@
 class <%= migration_name %> < ActiveRecord::Migration
   def self.up
-    create_table :<%= table_name %> do |t|
+    create_table :<%= table_name %>, :options => "ENGINE=MyISAM CHARSET=utf8" do | table |
 <% for attribute in attributes -%>
-      t.column :<%= attribute.name %>, :<%= attribute.type %>
+      table.column :<%= attribute.name %>, :<%= attribute.type %>
 <% end -%>
     end
   end

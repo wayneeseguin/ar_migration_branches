@@ -1,4 +1,5 @@
 class MigrationBranchesGenerator < Rails::Generator::NamedBase
+
   def manifest
     record do | manifest_object |
       all_migrations = ["#{file_name}:#{actions[0]}"]
@@ -9,8 +10,7 @@ class MigrationBranchesGenerator < Rails::Generator::NamedBase
         migration_name, branch_name = migration_details.split( ':' )
         branch_name = nil if branch_name == "default"
 
-        directory = "db/migrate/#{branch_name}"
-        manifest_object.migration_template "migration.rb", directory, 
+        manifest_object.migration_template "migration.rb", "db/migrate#{'/' + branch_name if branch_name}", 
         :assigns => { :migration_name => "Create#{class_name.pluralize.gsub( /::/, '' )}" }, 
         :migration_file_name => "create_#{file_path.gsub( /\//, '_' ).pluralize}"
       end
