@@ -9,10 +9,11 @@ class MigrationBranchesGenerator < Rails::Generator::NamedBase
       all_migrations.each do | migration_details |
         migration_name, branch_name = migration_details.split( ':' )
         branch_name = nil if branch_name == "default"
-
+        class_name=migration_name.camelize
+        file_name=migration_name.underscore
         manifest_object.migration_template "migration.rb", "db/migrate#{'/' + branch_name if branch_name}", 
         :assigns => { :migration_name => "Create#{class_name.pluralize.gsub( /::/, '' )}" }, 
-        :migration_file_name => "create_#{file_path.gsub( /\//, '_' ).pluralize}"
+        :migration_file_name => "create_#{file_name.gsub( /\//, '_' ).pluralize}"
       end
     end
   end

@@ -16,33 +16,28 @@ Syntax:
 rake db:migrate [branches=branch1[:version][,branch2[:version][,...]]] 
 # allow for :sub_branches ???
 
+1. Migrate the default branch, which is the default migration behavior.
 > rake db:migrate
-Migrates the default branch 'db/migrate' as the default behavior.
 
+2. Migrate only the default branch.
 > rake db:migrate branches=default
-This migrates only the default branch.
 
+3. Migrate branch_1 and branch_2 but not the default branch.
 > rake db:migrate branches=branch_1,branch_2
-This migrates the branch_1 and branch_2 but not the default branch.
 
+4. Migrate branch_2 to version 2, branch_1 to version 1, and the default branch to version 3
 > rake db:migrate branches=branch_2:2,branch_1:1,default:3
-This migrates:
-  branch_2 to version 2
-  branch_1 to version 1
-  default to version 3
 
-> rake db:migrate branches=branch_1:4,branch_2:2 VERSION=5
-would be the same as
-> db:migrate branches=branch_1:4,branch_2:2,default:5
-This migrates:
-  branch_1 to version 4
-  branch_2 to version 2
-  default to version 5
+
+5.  Migrate branch_1 to version 4, branch_2 to version 2 and the default branch to version 5
+  > rake db:migrate branches=branch_1:4,branch_2:2 VERSION=5
+  would be the same as
+  > db:migrate branches=branch_1:4,branch_2:2,default:5
 
 Notes:
- - The 'default' branch is 'db/migrate'
+ - The "default" branch is "db/migrate"
  - --trace works as expected
- - VERSION=Y overrides default:X in the same line
+ - VERSION=Y overrides default:X in the same command
 
 ===============================================================================
 = Generators
@@ -51,21 +46,22 @@ Syntax:
 ./script/generate migration_name branch [migration_name[:branch] [...]]
 
 Examples:
+1. Create a migration 
+    db/migrate/XXX_create_sessions.rb
 > ./script/generate migration_branches create_sessions
 or
 > ./script/generate migration create_sessions
-Creates a migration: 
-    db/migrate/XXX_create_sessions.rb
+    
 
-> ./script/generate migration_branches create_users users user_preferences:users
-Creates the migration: 
+2. Creates the migrations: 
     db/migrate/users/001_create_users.rb
     db/migrate/users/001_create_user_preferences.rb
+> ./script/generate migration_branches create_users users user_preferences:users
 
-> ./script/generate migration_branches create_states lookup create_address_types:lookup
-Creates the migrations (and directory if doesn't exist):
+3. Creates the migrations (and directory if doesn't exist):
     db/migrate/lookup/001_create_states.rb
     db/migrate/lookup/002_create_address_types.rb
+> ./script/generate migration_branches create_states lookup create_address_types:lookup
 
 Notes:
   - I would have liked to have overridden  the default migration generator 
@@ -121,7 +117,7 @@ Benefits
    System tables, Lookup tables and User tables can be kept separate. 
    Each one can be migrated up or down without effecting the others.
 
- - For an integraiton database ( one database with many applications ) branches 
+ - For an integration database ( one database with many applications ) branches 
    can be created to separate both application specific tables and tables 
    corresponding to modules within an application.
 
@@ -186,9 +182,8 @@ error is raised.
 = O - Optional, R - Required, ? - Not sure, N - Not happening (yet)
 ===============================================================================
 
-R - Add a generator that incorporates models... the default models do not
-    Account for brances... really should figure out how to overwrite the 
-    default generators.
+? - Figure out how to overwrite the default model and migration generators to 
+    be able to use the same command.
 
 ? - Is it necessary to enforce branch integrity, meaning tables belong to a 
     branch and cannot be modified outside that branch?
