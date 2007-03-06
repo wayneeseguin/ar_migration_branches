@@ -1,0 +1,4 @@
+# This should be setup just like fixtures.
+<%= migration_name %>:
+  id: 
+  name: 

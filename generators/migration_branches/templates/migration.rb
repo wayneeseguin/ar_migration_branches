@@ -1,4 +1,4 @@
-class Create<%= class_name.underscore.camelize %> < ActiveRecord::Migration
+class <%= migration_name.underscore.camelize %> < ActiveRecord::Migration
   def self.up
   end
 
