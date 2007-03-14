@@ -1,3 +1,4 @@
+# Default application data for the model <%= model %> goes here
 # This should be setup just like fixtures.
 <%= migration_name %>:
   id: 

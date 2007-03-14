@@ -25,6 +25,16 @@ class ModelInBranchGenerator < Rails::Generator::NamedBase
         :attributes     => attributes }, 
         :migration_file_name => "create_#{file_path.gsub( /\//, '_' ).pluralize}"
       end
+      
+      unless options[:skip_data] == true
+        # Create the default data yaml file
+        manifest_object.migration_template( "migration.rb", 
+          "db/data#{'/' + branch_name if branch_name}/#{file_name}", 
+          :assigns => { :migration_name => "#{class_name.pluralize.gsub( /::/, '' )}" }, 
+          :migration_file_name => "create_#{file_name.gsub( /\//, '_' ).pluralize}"
+        )
+      end
+      
     end
   end
 
@@ -37,7 +47,13 @@ class ModelInBranchGenerator < Rails::Generator::NamedBase
   def add_options!(opt)
     opt.separator ''
     opt.separator 'Options:'
-    opt.on( "--skip-migration", "Don't generate a migration file for this model" ) { | v | options[:skip_migration] = v }
-  end
 
+    opt.on( "--skip-migration", "Don't generate a migration file for this model" ) do | value |
+      options[:skip_migration] = v
+    end
+
+    option.on( "--skip-data", "Don't generate a default yaml file for this model" ) do | value |
+      options[:skip_data] = true
+    end
+  end
 end

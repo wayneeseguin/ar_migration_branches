@@ -10,6 +10,75 @@
 
 # MigrationBranches Ruby on Rails Plugin
 
+module MigrationBranches
+  class DataLoader
+
+    attr_accessor :branch_name
+
+    def initialize(branch_name)
+      # Load the Rails environment
+      @branch_name = branch_name
+    end
+
+    def yaml_path
+      # #{RAILS_ROOT}/db/data/#{@branch_name}/#{@branch_name}.rb
+    end
+
+    def yaml_path
+      # #{RAILS_ROOT}/db/data/#{@branch_name}/#{@branch_name}.rb
+    end
+
+    # Create records in join table given human readable field mapping and
+    # both sides of join.
+    # EXAMPLE:
+    # branch_name: "assessment_question"
+    # parent_class: Assessment
+    # child_class: Question
+    # join_class: AssessmentQuestion
+    # map_field: "Question"
+    # child_attribute: "code_name"
+    #
+    # load_join_table_data( 
+    #   :file_name => "db/data/", 
+    #   :parent => , :child => , 
+    #   :map_field => , 
+    #   :child_attribute => )
+
+    def load_join_table_data_from_file( join_file_name )
+      join_file_name.match
+      parent = $1
+      child = $2
+      # parse file name to get parent and child class names
+      # load file and get map_field, child_attribute
+      self.load_join_table_data( options )
+    end
+    
+    def load_join_table_data( options = { } )
+      parent_class.find( :all ).each do | parent |
+        begin
+          # clear out the old mappings
+          parent.send( join_class.name.underscore.pluralize ).destroy_all unless parent.send( join_class.class.name.underscore).empty?
+
+          # load this parent's children from the yml file
+          unless File.zero?( self.yaml_path )
+            yaml = YAML.load( File.read( self.yaml_path ) ).each do | data |
+              # create a new join record
+              child_record = child_class.send( "find_by_#{child_attribute}( data['#{map_field}'] )" )
+              new_join_record = parent.send(join_class.class.name.underscore).new(data)
+              new_join_record.send( child_class.class.name.underscore ) = child_record 
+              new_join_record.save
+            end
+          else
+            # no join file, which should be impossible
+          end
+        rescue
+          puts("Problem loading join data from #{self.yaml_path}: #{$!}")
+        end
+      end    
+    end
+  end
+end
+
 module ActiveRecord
 
   class Migrator#:nodoc:
