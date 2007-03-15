@@ -112,7 +112,8 @@ module ActiveRecord
         end
       end
 
-      def current_version
+      def current_version( branch )
+        @@branch = branch if branch.to_s.length > 0
         # changed
         version_field = (@@branch.nil? || @@branch.empty?) ? "version" : "version_#{@@branch}"
         sql = "SELECT `#{version_field}` FROM `#{schema_info_table_name}`"

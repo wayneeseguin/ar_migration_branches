@@ -70,11 +70,15 @@ namespace :db do
       else
         data_files = Dir.glob( File.join( RAILS_ROOT, "db", "data", branch_name, "*.yaml" ) )
       end
-      ( data_files || [ ] ).each do | data_file |
-        if data_file.match /.*_join_.*/
-          MigrationBranches::DataLoader.load_join_table_data_from_file( data_file )
-        else
-          Fixtures.create_fixtures( "db/data#{'/' + branch_name if branch_name}", File.basename( data_file, ".*" ) )
+      current_version = ActiveRecord::Migrator.current_version( branch )
+      puts "current_version: #{current_version}"
+      if current_version == 0
+        ( data_files || [ ] ).each do | data_file |
+          if data_file.match /.*_join_.*/
+            MigrationBranches::DataLoader.load_join_table_data_from_file( data_file )
+          else
+            Fixtures.create_fixtures( "db/data#{'/' + branch_name if branch_name}", File.basename( data_file, ".*" ) )
+          end
         end
       end
       
