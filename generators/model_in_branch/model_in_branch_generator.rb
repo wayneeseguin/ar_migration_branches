@@ -31,7 +31,11 @@ class ModelInBranchGenerator < Rails::Generator::NamedBase
       unless options[:skip_data]
         # Create the default data yaml file
         manifest_object.directory File.join( "db/data#{'/' + branch_name if branch_name}" )
-        manifest_object.template "branch_name.rb", File.join( "db/data#{'/' + branch_name if branch_name}", "#{branch_name}.rb" )
+
+        manifest_object.template "branch_name.rb", 
+         File.join( "db/data#{'/' + branch_name if branch_name}", "#{branch_name}.rb" ), 
+         :assigns => { :branch_name => branch_name }
+
         manifest_object.template "model.yml", 
           File.join( "db/data", "#{'/' + branch_name if branch_name}/#{file_name.pluralize}.yml" ), 
           :assigns => { :model_name => file_name }
