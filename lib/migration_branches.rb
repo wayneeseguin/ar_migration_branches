@@ -114,7 +114,7 @@ module ActiveRecord
 
       def current_version( branch = nil )
         # changed
-        @@branch = branch unless branch.nil?
+        @@branch = branch
         version_field = (@@branch.nil? || @@branch.empty?) ? "version" : "version_#{@@branch}"
         sql = "SELECT `#{version_field}` FROM `#{schema_info_table_name}`"
         ( Base.connection.select_one( sql ) || {version_field => 0} )[version_field].to_i
