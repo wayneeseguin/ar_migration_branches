@@ -38,7 +38,7 @@ namespace :db do
 
       begin
         branch_versions[branch][:start] = ActiveRecord::Migrator.current_version( branch )
-      rescue e
+      rescue Exception => e
         branch_versions[branch][:start] = 0
       end
 
