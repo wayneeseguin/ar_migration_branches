@@ -36,7 +36,11 @@ namespace :db do
     branch_versions = { }
     branches.each do | branch |
 
-      branch_versions[branch][:start] = ActiveRecord::Migrator.current_version( branch )
+      begin
+        branch_versions[branch][:start] = ActiveRecord::Migrator.current_version( branch )
+      rescue e
+        branch_versions[branch][:start] = 0
+      end
 
       branch_name, target_version = ( branch.nil? ? [ nil, nil ] : branch.to_s.split( ':' ) )
       branch_name = nil if branch_name == "default"
