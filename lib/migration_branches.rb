@@ -13,19 +13,19 @@
 module MigrationBranches
   class DataLoader
 
-    attr_accessor :branch_name
+    attr_accessor :branch
 
-    def initialize( branch_name )
+    def initialize( branch = nil )
       # Load the Rails environment
-      @branch_name = branch_name
+      @@branch = branch
     end
 
     def yaml_path
-      # #{RAILS_ROOT}/db/data/#{@branch_name}/#{@branch_name}.rb
+      # #{RAILS_ROOT}/db/data/#{@@branch}/#{@@branch}.rb
     end
 
     def yaml_path
-      # #{RAILS_ROOT}/db/data/#{@branch_name}/#{@branch_name}.rb
+      # #{RAILS_ROOT}/db/data/#{@@branch}/#{@@branch}.rb
     end
 
     # Create records in join table given human readable field mapping and
@@ -112,8 +112,7 @@ module ActiveRecord
         end
       end
 
-      def current_version( branch = nil )
-        @@branch = branch if branch.to_s.length > 0
+      def current_version
         # changed
         version_field = (@@branch.nil? || @@branch.empty?) ? "version" : "version_#{@@branch}"
         sql = "SELECT `#{version_field}` FROM `#{schema_info_table_name}`"
@@ -144,6 +143,7 @@ module ActiveRecord
     end
 
     def current_version( branch = nil )
+      @@branch = branch if branch.to_s.length > 0
       self.class.current_version( branch )
     end
 
