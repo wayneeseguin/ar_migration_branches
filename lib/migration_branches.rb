@@ -112,7 +112,7 @@ module ActiveRecord
         end
       end
 
-      def current_version( branch )
+      def current_version( branch = nil )
         @@branch = branch if branch.to_s.length > 0
         # changed
         version_field = (@@branch.nil? || @@branch.empty?) ? "version" : "version_#{@@branch}"
@@ -143,8 +143,8 @@ module ActiveRecord
       end
     end
 
-    def current_version
-      self.class.current_version
+    def current_version( branch = nil )
+      self.class.current_version( branch )
     end
 
     def migrate( branch = nil )
