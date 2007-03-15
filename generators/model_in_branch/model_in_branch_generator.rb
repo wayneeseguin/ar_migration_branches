@@ -38,7 +38,7 @@ class ModelInBranchGenerator < Rails::Generator::NamedBase
 
         manifest_object.template "model.yml", 
           File.join( "db/data", "#{'/' + branch_name if branch_name}/#{file_name.pluralize}.yml" ), 
-          :assigns => { :model_name => file_name }
+         :assigns => { :model_name => file_name }
       end
       
     end
