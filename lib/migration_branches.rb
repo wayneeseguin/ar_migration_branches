@@ -66,7 +66,7 @@ module MigrationBranches
               # create a new join record
               child_record = child_class.send( "find_by_#{child_attribute}( data['#{map_field}'] )" )
               new_join_record = parent.send( join_class.class.name.underscore ).new( data )
-              new_join_record.send( child_class.class.name.underscore ) = child_record 
+              new_join_record.send( child_class.class.name.underscore )# = child_record # What was the intent here?
               new_join_record.save
             end
           else
