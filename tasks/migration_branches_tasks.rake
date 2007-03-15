@@ -35,7 +35,7 @@ namespace :db do
     # Example: branch_1:3,branch_1:4
     branch_versions = { }
     branches.each do | branch |
-
+      branch_versions[branch] = { }
       begin
         branch_versions[branch][:start] = ActiveRecord::Migrator.current_version( branch )
       rescue Exception => e
