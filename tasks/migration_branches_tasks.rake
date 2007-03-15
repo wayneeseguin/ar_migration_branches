@@ -33,8 +33,11 @@ namespace :db do
 
     branches.uniq! # This should be changed to delete duplicate branches or error out on duplicate
     # Example: branch_1:3,branch_1:4
-
+    branch_versions = { }
     branches.each do | branch |
+
+      branch_versions[branch][:start] = ActiveRecord::Migrator.current_version( branch )
+
       branch_name, target_version = ( branch.nil? ? [ nil, nil ] : branch.to_s.split( ':' ) )
       branch_name = nil if branch_name == "default"
       puts "==============================================================================="
@@ -46,12 +49,16 @@ namespace :db do
       ActiveRecord::Migrator.migrate( "db/migrate/", target_version ? target_version.to_i : nil, branch_name )
 
       puts ""
+
+      branch_versions[branch][:end] = ActiveRecord::Migrator.current_version( branch )
     end
-    puts "** Finished migrating through branches:\n    #{branches.map{ | element | ( element || "default" ) }.join( ", " )}"
+    puts "** Finished migrating through branches:\n    #{branches.map{ | element | ( element || "default" ) }.join( ", " ) }"
     Rake::Task["db:schema:dump"].invoke if ActiveRecord::Base.schema_format == :ruby
-    
+    puts "branch_versions: #{branch_versions.inspect}"
     # Now load default data from each branch
     branches.each do | branch |
+      next unless branch_versions[branch][:start] == 0 && branch_versions[branch][:end] > 0
+
       branch_name, target_version = ( branch.nil? ? [ nil, nil ] : branch.to_s.split( ':' ) )
       branch_name = nil if branch_name == "default"
       puts "==============================================================================="
@@ -70,8 +77,6 @@ namespace :db do
       else
         data_files = Dir.glob( File.join( RAILS_ROOT, "db", "data", branch_name, "*.yaml" ) )
       end
-      current_version = ActiveRecord::Migrator.current_version( branch )
-      puts "current_version: #{current_version}"
       if current_version == 0
         ( data_files || [ ] ).each do | data_file |
           if data_file.match /.*_join_.*/
