@@ -15,7 +15,7 @@ module MigrationBranches
 
     attr_accessor :branch_name
 
-    def initialize(branch_name)
+    def initialize( branch_name )
       # Load the Rails environment
       @branch_name = branch_name
     end
@@ -40,8 +40,9 @@ module MigrationBranches
     #
     # load_join_table_data( 
     #   :file_name => "db/data/", 
-    #   :parent => , :child => , 
-    #   :map_field => , 
+    #   :parent => "Assessment", 
+    #   :child => "Question", 
+    #   :map_field => "Question", 
     #   :child_attribute => )
 
     def load_join_table_data_from_file( join_file_name )
@@ -52,7 +53,7 @@ module MigrationBranches
       # load file and get map_field, child_attribute
       self.load_join_table_data( options )
     end
-    
+
     def load_join_table_data( options = { } )
       parent_class.find( :all ).each do | parent |
         begin
@@ -64,7 +65,7 @@ module MigrationBranches
             yaml = YAML.load( File.read( self.yaml_path ) ).each do | data |
               # create a new join record
               child_record = child_class.send( "find_by_#{child_attribute}( data['#{map_field}'] )" )
-              new_join_record = parent.send(join_class.class.name.underscore).new(data)
+              new_join_record = parent.send( join_class.class.name.underscore ).new( data )
               new_join_record.send( child_class.class.name.underscore ) = child_record 
               new_join_record.save
             end

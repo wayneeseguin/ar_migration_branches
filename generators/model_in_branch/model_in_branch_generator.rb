@@ -17,22 +17,24 @@ class ModelInBranchGenerator < Rails::Generator::NamedBase
       manifest_object.template "unit_test.rb",  File.join( "test/unit", class_path, "#{file_name}_test.rb" )
       manifest_object.template "fixtures.yml",  File.join( "test/fixtures", class_path, "#{table_name}.yml" )
 
-      unless options[:skip_migration]
-        branch_name = ( actions[0] == "default" ) ? nil : actions[0] and actions.shift
+      branch_name = ( actions[0] == "default" ) ? nil : actions[0] and actions.shift
+      puts "Branch Name: #{branch_name}"
+      puts "File Name: #{file_name}"
 
+      unless options[:skip_migration]
         manifest_object.migration_template "migration.rb", "db/migrate#{'/' + branch_name if branch_name}", 
         :assigns => { :migration_name => "Create#{class_name.pluralize.gsub( /::/, '' )}",
         :attributes     => attributes }, 
         :migration_file_name => "create_#{file_path.gsub( /\//, '_' ).pluralize}"
       end
       
-      unless options[:skip_data] == true
+      unless options[:skip_data]
         # Create the default data yaml file
-        manifest_object.migration_template( "migration.rb", 
-          "db/data#{'/' + branch_name if branch_name}/#{file_name}", 
-          :assigns => { :migration_name => "#{class_name.pluralize.gsub( /::/, '' )}" }, 
-          :migration_file_name => "create_#{file_name.gsub( /\//, '_' ).pluralize}"
-        )
+        manifest_object.directory File.join( "db/data#{'/' + branch_name if branch_name}" )
+        manifest_object.template "branch_name.rb", File.join( "db/data#{'/' + branch_name if branch_name}", "#{branch_name}.rb" )
+        manifest_object.template "model.yml", 
+          File.join( "db/data", "#{'/' + branch_name if branch_name}/#{file_name.pluralize}.yml" ), 
+          :assigns => { :model_name => file_name }
       end
       
     end
@@ -44,11 +46,11 @@ class ModelInBranchGenerator < Rails::Generator::NamedBase
     "Usage: #{$0} generate ModelName [branch_name, field:type, [field:type, [...]]]"
   end
 
-  def add_options!(opt)
-    opt.separator ''
-    opt.separator 'Options:'
+  def add_options!( option )
+    option.separator ''
+    option.separator 'Options:'
 
-    opt.on( "--skip-migration", "Don't generate a migration file for this model" ) do | value |
+    option.on( "--skip-migration", "Don't generate a migration file for this model" ) do | value |
       options[:skip_migration] = v
     end
 
