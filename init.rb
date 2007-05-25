@@ -1,3 +1,4 @@
+require "blank"
 require "migration_branches"
 
 #ActiveRecord::Base.send( :include, ActiveRecord::Migrator )

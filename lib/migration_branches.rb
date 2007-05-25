@@ -84,101 +84,125 @@ module ActiveRecord
 
   class Migrator#:nodoc:
     class << self
-
-      def migrate( migrations_path, target_version = nil, branch = nil )
+      alias_method_chain :migrate, :branches
+      def migrate_with_branches( migrations_path, target_version = nil, branch = nil )
         @@branch = branch
-
-        Base.connection.initialize_schema_information
-
-        if @@branch.nil?
-          Base.connection.initialize_schema_information
-        else
+        unless @@branch.blank?
           begin
             version_field = @@branch.nil? ? "version" : "version_#{@@branch}"
-            Base.connection.execute( "ALTER TABLE `#{ActiveRecord::Migrator.schema_info_table_name}` ADD `#{version_field}` int(11) UNSIGNED DEFAULT '0';" )
-            #Base.connection.execute( "INSERT INTO `#{ActiveRecord::Migrator.schema_info_table_name}` ( `#{version_field}` ) VALUES(0)" )
+            Base.connection.execute( "ALTER TABLE #{ActiveRecord::Migrator.schema_info_table_name} ADD #{version_field} int(11) UNSIGNED DEFAULT 0;" )
           rescue ActiveRecord::StatementInvalid
             # Schema for branch has already been intialized
           end
         end
-
-        case
-        when target_version.nil?, current_version < target_version
-          up( migrations_path, target_version )
-        when current_version > target_version
-          down( migrations_path, target_version )
-        when current_version == target_version
-          return # You're on the right version
-        end
+        
+        migrate_without_branches
       end
-
-      def current_version( branch = nil )
-        # changed
-        @@branch = branch
-        version_field = (@@branch.nil? || @@branch.empty?) ? "version" : "version_#{@@branch}"
-        sql = "SELECT `#{version_field}` FROM `#{schema_info_table_name}`"
-        ( Base.connection.select_one( sql ) || {version_field => 0} )[version_field].to_i
+      #def migrate( migrations_path, target_version = nil, branch = nil )
+      #
+      #  Base.connection.initialize_schema_information
+      #
+      #  unless @@branch.blank?
+      #    begin
+      #      version_field = @@branch.nil? ? "version" : "version_#{@@branch}"
+      #      Base.connection.execute( "ALTER TABLE #{ActiveRecord::Migrator.schema_info_table_name} ADD #{version_field} int(11) UNSIGNED DEFAULT 0;" )
+      #      #Base.connection.execute( "INSERT INTO #{ActiveRecord::Migrator.schema_info_table_name} ( #{version_field} ) VALUES(0)" )
+      #    rescue ActiveRecord::StatementInvalid
+      #      # Schema for branch has already been intialized
+      #    end
+      #  end
+      #
+      #  case
+      #  when target_version.nil?, current_version < target_version
+      #    up( migrations_path, target_version )
+      #  when current_version > target_version
+      #    down( migrations_path, target_version )
+      #  when current_version == target_version
+      #    return # You're on the right version
+      #  end
+      #end
+      alias_method_chain :current_version, :branches    
+      def current_version_with_branches
+        version_field = @@branch.blank? ? "version" : "version_#{@@branch}"
+        sql = "SELECT #{version_field} FROM #{schema_info_table_name}"
+        ( Base.connection.select_one( sql ) || { version_field => 0 } )[version_field].to_i
       end
     end
 
-    def initialize( direction, migrations_path, target_version = nil, branch = nil )
-      # Changed
-      raise StandardError.new( "This database does not yet support migrations" ) unless Base.connection.supports_migrations?
-      @direction, @migrations_path, @target_version = direction, migrations_path, target_version
-
-      @@branch ||= branch
-
-      Base.connection.initialize_schema_information
-
-      if @@branch.nil?
-        Base.connection.initialize_schema_information
+    alias_method_chain :initialize, :branches
+    def initialize_with_branches( direction, migrations_path, target_version = nil, branch = nil )
+      initialize_without_branches
+      if branch.to_s.match /([a-zA-Z\-_0-9]+):?(?:([0-9]+))?/
+        @@branch = $1
+        @target_version = $2
       else
+        @@branch = branch
+      end
+
+      unless branch.blank?
         begin
           version_field = (@@branch.nil? || @@branch.empty?) ? "version" : "version_#{@@branch}"
-          Base.connection.execute( "ALTER TABLE `#{ActiveRecord::Migrator.schema_info_table_name}` ADD `#{version_field}` int(11) UNSIGNED DEFAULT '0';" )
-          #Base.connection.execute( "INSERT INTO `#{ActiveRecord::Migrator.schema_info_table_name}` ( `#{version_field}` ) VALUES(0)" )
+          Base.connection.execute( "ALTER TABLE #{ActiveRecord::Migrator.schema_info_table_name} ADD #{version_field} int(11) UNSIGNED DEFAULT 0;" )
         rescue ActiveRecord::StatementInvalid
           # Schema for branch has already been intialized
         end
       end
     end
 
-    def current_version( branch = nil )
-      @@branch = branch if branch.to_s.length > 0
-      self.class.current_version( branch )
-    end
+    #def current_version( branch = nil )
+    #  #@@branch = branch if branch.to_s.length > 0
+    #  self.class.current_version( branch )
+    #end
 
-    def migrate( branch = nil )
-      # changed
-      @@branch ||= branch
-      migration_classes.each do | ( version, migration_class ) |
-        Base.logger.info( "Reached target version: #{@target_version}" ) and break if reached_target_version?( version )
-        next if irrelevant_migration?( version )
+    # The whole purpose of overwriting this method was to be able to 
+    # Inject the "In branch..." string, let's try to avoid overwriting 
+    #methods we don't absolutely have to.
 
-        Base.logger.info "Migrating to #{migration_class} (#{version})#{"In branch #{@@branch}" unless in_default_branch}"
-        migration_class.migrate( @direction )
-        set_schema_version( version )
-      end
-    end
+    #def migrate
+    #  migration_classes.each do | ( version, migration_class ) |
+    #    Base.logger.info( "Reached target version: #{@target_version}" ) and break if reached_target_version?( version )
+    #    next if irrelevant_migration?( version )
+    #
+    #    Base.logger.info "Migrating to #{migration_class} (#{version})#{"In branch #{@@branch}" unless in_default_branch}"
+    #    migration_class.migrate( @direction )
+    #    set_schema_version( version )
+    #  end
+    #end
 
     private
 
-    def migration_files
-      files = Dir["#{@migrations_path}#{( "#{@@branch}/" ) if @@branch}[0-9]*_*.rb"]
-      files.sort_by do | migration_file |
-        migration_version_and_name( migration_file ).first.to_i
+    # This is essential to the branches logic
+    # Let's attempt to use alias_method_chain insted of just plain hacking the method
+    alias_method_chain :migration_files, :branches
+    def migration_files_with_branches
+      @migrations_base_path ||= @migrations_path
+      if @@branch.to_s.length > 0
+        @migrations_path += "#{@migrations_base_path}#{@@branch}/"
       end
-      down? ? files.reverse : files
+      migration_files_without_branches
     end
 
-    def in_default_branch
-      @@branch.nil? || @@branch.empty? || @@branch == [ "default" ]
+    alias_method_chain :set_schema_version, :branches
+    def set_schema_version_with_branches( version )
+      unless @branch.blank?
+        query =  "UPDATE #{self.class.schema_info_table_name} "
+        query += "SET version_#{@@branch} = #{down? ? version.to_i - 1 : version.to_i}"
+        Base.connection.update( query )
+      else
+        set_schema_version_without_branches
+      end
     end
-    
-    def set_schema_version(version)
-      version_field = (@@branch.nil? || @@branch.empty?) ? "version" : "version_#{@@branch}"
-      Base.connection.update("UPDATE `#{self.class.schema_info_table_name}` SET `#{version_field}` = #{down? ? version.to_i - 1 : version.to_i}")
-    end
-    
+
+    #def migration_files
+    #  files = Dir["#{@migrations_path}#{( "#{@@branch}/" ) if @@branch}[0-9]*_*.rb"]
+    #  files.sort_by do | migration_file |
+    #    migration_version_and_name( migration_file ).first.to_i
+    #  end
+    #  down? ? files.reverse : files
+    #end
+
+    #def in_default_branch
+    #  @@branch.nil? || @@branch.empty? || @@branch == [ "default" ]
+    #end
   end
 end
