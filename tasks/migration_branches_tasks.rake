@@ -45,16 +45,14 @@ namespace :db do
 
       ActiveRecord::Migrator.branch = branch_name
       ActiveRecord::Migrator.target_version = target_version
-
+      ActiveRecord::Migrator.initialize_branch_schema
+      
       branch_versions[branch_name] = { :start => ActiveRecord::Migrator.current_version, :end => nil }
       
       "Migrating db/migrate/#{branch_name}#{ " to version #{target_version}" unless target_version.nil?}".log( :header )
 
-      #require "#{File.dirname(__FILE__)}/../init.rb"
       migrations_path = "db/migrate/#{branch_name + '/' unless branch_name.blank?}"
       version = target_version.blank? ? nil : target_version.to_i
-      "migrations_path: #{migrations_path} ; version: #{version} ".log(:info)
-      ActiveRecord::Migrator.initialize_branch_schema
       ActiveRecord::Migrator.migrate( migrations_path, version )#, branch_name )
       
       branch_versions[branch_name][:end] = ActiveRecord::Migrator.current_version
@@ -63,8 +61,7 @@ namespace :db do
       "Finished migrating branch #{branch_name}".log( :footer )
     end
     
-    "Finished migrating through branches:".log( :info )
-    branches.map{ | element | ( element || "default" ) }.join( ", " ).log( :info )
+    "Finished migrating through branches:#{branches.map{ | element | element.blank? ? "default" : element }.join( ", " )}".log( :info )
     
     Rake::Task["db:schema:dump"].invoke if ActiveRecord::Base.schema_format == :ruby
 

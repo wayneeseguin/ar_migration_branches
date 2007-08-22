@@ -1,4 +1,4 @@
-# Copyright (c) 2006 Wayne E. Seguin
+# Copyright (c) 2006-Present Wayne E. Seguin
 # 
 # THIS SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 # EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
@@ -16,11 +16,11 @@ class String
     when :error
       puts "!! #{self}"
     when :debug
-      puts "<b> #{self}"  if ENV["DEBUG"]
+      puts "<b> #{self}" if ENV["DEBUG"] == "true"
     when :inspect
-      puts "  - #{self}" if ENV["DEBUG"]
+      puts "  - #{self}" if ENV["DEBUG"] == "true"
     when :method
-      puts "() #{self}" if ENV["DEBUG"]
+      puts "() #{self}" if ENV["DEBUG"] == "true"
     when :header, :footer
       puts "===============================================================================\n"      
       puts "= #{self}"
@@ -39,18 +39,6 @@ module ActiveRecord
       attr_accessor :branch
       attr_accessor :target_version
 
-      #def migrate_with_branches( migrations_path, target_version = nil, branch_name = nil )
-      #  "migrate_with_branches".log( :method )
-      #  "migrations_path: #{migrations_path}, target_version: #{target_version}, branch: #{ActiveRecord::Migrator.branch}".log( :inspect )
-      #  
-      #  ActiveRecord::Migrator.branch ||= branch_name unless branch_name.blank?
-      #  ActiveRecord::Migrator.target_version = target_version
-      #  
-      #  migrations_path += ActiveRecord::Migrator.branch unless ActiveRecord::Migrator.branch.blank?
-      #  migrate_without_branches( migrations_path, target_version )
-      #end
-      #alias_method_chain :migrate, :branches
-      
       def current_version_with_branches
         "current_version_with_branches".log( :method )
         version_field = ActiveRecord::Migrator.branch.blank? ? "version" : "version_#{ActiveRecord::Migrator.branch}"
@@ -65,18 +53,7 @@ module ActiveRecord
         current_version || 0
       end
       alias_method_chain :current_version, :branches
-      
     end
-    
-    #def initialize_with_branches( direction, migrations_path, target_version = nil)
-    #  "initialize_with_branches".log( :method )
-    #  "direction: #{direction}, migrations_path: #{migrations_path}, :target_version: #{target_version}, branch: #{ActiveRecord::Migrator.branch}".log( :inspect )
-    #  
-    #  initialize_without_branches( direction, migrations_path, target_version )
-    #  
-    #  ActiveRecord::Migrator.initialize_branch_schema unless ActiveRecord::Migrator.branch.blank?
-    #end
-    #alias_method_chain :initialize, :branches
     
     def self.initialize_branch_schema
       "self.initialize_schema_information_with_branches".log( :method )
@@ -104,22 +81,13 @@ module ActiveRecord
       end
     end
     
-    def migration_files_with_branches
-      @migrations_base_path ||= @migrations_path
-      if ActiveRecord::Migrator.branch.to_s.length > 0
-        @migrations_path += "#{@migrations_base_path}#{ActiveRecord::Migrator.branch}/"
-      end
-      migration_files_without_branches
-    end
-    alias_method_chain :migration_files, :branches
-
     def set_schema_version_with_branches( version )
       "set_schema_version_with_branches".log :method
       "version: #{version} ; branch: #{ActiveRecord::Migrator.branch}".log :inspect
       
       unless ActiveRecord::Migrator.branch.blank?
         query = <<-QUERY
-        UPDATE #{self.class.schema_info_table_name} SET
+        UPDATE #{ActiveRecord::Migrator.schema_info_table_name} SET
         version_#{ActiveRecord::Migrator.branch} = #{down? ? version.to_i - 1 : version.to_i}
         QUERY
         Base.connection.update( query )
@@ -199,4 +167,3 @@ end # end module ActiveRecord
 #    end
 #  end
 #end
-
