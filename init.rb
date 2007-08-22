@@ -1,5 +1,6 @@
-require "blank"
-require "migration_branches"
+directory = File.dirname( __FILE__ )
+require "#{directory}/lib/blank"
+require "#{directory}/lib/migration_branches"
 
 #ActiveRecord::Base.send( :include, ActiveRecord::Migrator )
 #ActiveRecord::Base.class_eval do
