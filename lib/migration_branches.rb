@@ -49,7 +49,7 @@ module ActiveRecord
           "selecting version field failed, setting current version to 0".log( :error )
           current_version = 0
         end
-        "current version selected: #{current_version}".log
+        "current version selected: #{current_version}".log( :debug )
         current_version || 0
       end
       alias_method_chain :current_version, :branches
@@ -65,7 +65,7 @@ module ActiveRecord
         Base.connection.execute( "ALTER TABLE #{ActiveRecord::Migrator.schema_info_table_name} ADD #{version_field} int(11) UNSIGNED DEFAULT 0;" )
         "Added schema_info.#{version_field}".log :info
       rescue ActiveRecord::StatementInvalid
-        "schema_info.#{version_field} already exists".log :error
+        "schema_info.#{version_field} already exists".log( :debug )
       end
     end
 
