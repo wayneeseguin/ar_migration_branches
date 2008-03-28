@@ -19,14 +19,14 @@ namespace :db do
     branches = ( ENV["branches"] || ENV["BRANCHES"] || ENV["Branches"] ).to_s.strip.gsub( /\s/, "_" ).split( ',' )
 
     if branches.include?( "all" )
-      all_branches =  ( `cd #{Dir.pwd}/db/migrate;ls -d */` ).gsub( /\/$/, '' ).split( "\n" )
+      all_branches =  ( `cd '#{Dir.pwd}/db/migrate';ls -d */` ).gsub( /\/$/, '' ).split( "\n" )
       branches = all_branches.insert( 0, nil )
     elsif ( branches.nil? || branches.empty? )
       branches = [nil]
     end
     
     # Check if the working direcory has 'db/' directory
-    unless ( `cd #{Dir.pwd}; ls -d */ | grep db` ).strip == "db/"
+    unless ( `cd '#{Dir.pwd}'; ls -d */ | grep db` ).strip == "db/"
       raise StandardError.new("\nrake db:migrate must be run from the RAILS_ROOT directory!")
     end
 
@@ -108,7 +108,7 @@ namespace :db do
     # rake db:migrate:list_branch
     desc "List all branches."
     task :list_branches => :environment do
-      branches =  ( `cd #{Dir.pwd}/db/migrate; ls -d */` ).gsub( /\/$/, '' ).split( "\n" )
+      branches =  ( `cd '#{Dir.pwd}/db/migrate'; ls -d */` ).gsub( /\/$/, '' ).split( "\n" )
       puts "Branches:\n\tdefault"
       branches.each do | branch_name |
         puts "\t#{branch_name}"
