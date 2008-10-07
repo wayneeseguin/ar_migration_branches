@@ -11,7 +11,6 @@ module Rake
 end
 
 namespace :db do
-  
   Rake::application.remove_task( "db:migrate" ) # Remove the Rails migration task from Rake Tasks.
 
   desc "Migrate the database through scripts in db/migrate. \n\tTarget a specific version with VERSION=x from the command line."
@@ -19,14 +18,14 @@ namespace :db do
     branches = ( ENV["branches"] || ENV["BRANCHES"] || ENV["Branches"] ).to_s.strip.gsub( /\s/, "_" ).split( ',' )
 
     if branches.include?( "all" )
-      all_branches =  ( `cd '#{Dir.pwd}/db/migrate';ls -d */` ).gsub( /\/$/, '' ).split( "\n" )
+      all_branches =  ( `cd #{Dir.pwd}/db/migrate;ls -d */` ).gsub( /\/$/, '' ).split( "\n" )
       branches = all_branches.insert( 0, nil )
     elsif ( branches.nil? || branches.empty? )
       branches = [nil]
     end
     
     # Check if the working direcory has 'db/' directory
-    unless ( `cd '#{Dir.pwd}'; ls -d */ | grep db` ).strip == "db/"
+    unless ( `cd #{Dir.pwd}; ls -d */ | grep db` ).strip == "db/"
       raise StandardError.new("\nrake db:migrate must be run from the RAILS_ROOT directory!")
     end
 
@@ -44,29 +43,30 @@ namespace :db do
       target_version = ENV["VERSION"] if ( branch_name.nil? && target_version.nil? && !ENV["VERSION"].nil? && ENV["VERSION"].to_i > 0 )
 
       ActiveRecord::Migrator.branch = branch_name
-      ActiveRecord::Migrator.target_version = target_version
-      ActiveRecord::Migrator.initialize_branch_schema
+      puts "branch: #{branch_name}"
+      #ActiveRecord::Migrator.target_version = target_version
+      #ActiveRecord::Migrator.initialize_branch_schema
       
       branch_versions[branch_name] = { :start => ActiveRecord::Migrator.current_version, :end => nil }
       
-      "Migrating db/migrate/#{branch_name}#{ " to version #{target_version}" unless target_version.nil?}".log( :header )
-
-      migrations_path = "db/migrate/#{branch_name + '/' unless branch_name.blank?}"
-      version = target_version.blank? ? nil : target_version.to_i
-      ActiveRecord::Migrator.migrate( migrations_path, version )#, branch_name )
+      puts "Migrating db/migrate/#{branch_name}#{ " to version #{target_version}" unless target_version.nil?}"
+      migrations_path = "db/migrate/#{branch_name + '/' unless branch_name.to_s.empty?}"
+      version = target_version.to_i > 0 ? target_version.to_i : nil
+      
+      ActiveRecord::Migrator.migrate(migrations_path, version)
       
       branch_versions[branch_name][:end] = ActiveRecord::Migrator.current_version
       
-      "branch_versions: #{branch_versions.inspect}".log( :debug )
-      "Finished migrating branch #{branch_name}".log( :footer )
+      puts "branch_versions: #{branch_versions.inspect}"
+      puts "Finished migrating branch #{branch_name}"
     end
     
-    "Finished migrating through branches:#{branches.map{ | element | element.blank? ? "default" : element }.join( ", " )}".log( :info )
+    puts "Finished migrating through branches:#{branches.map{ | element | element.to_s.empty? ? "default" : element }.join( ", " )}"
     
     Rake::Task["db:schema:dump"].invoke if ActiveRecord::Base.schema_format == :ruby
 
 #    #
-#    "Loading default data for branches: #{branches.inspect}".log( :header )
+#    puts "Loading default data for branches: #{branches.inspect}"
 #    #
 #    branches.each do | branch |
 #      branch_name, target_version = ( branch.nil? ? [ nil, nil ] : branch.to_s.split( ':' ) )
@@ -104,15 +104,12 @@ namespace :db do
   end
 
   namespace :migrate do
-  
     # rake db:migrate:list_branch
     desc "List all branches."
     task :list_branches => :environment do
-      branches =  ( `cd '#{Dir.pwd}/db/migrate'; ls -d */` ).gsub( /\/$/, '' ).split( "\n" )
+      branches =  ( `cd #{Dir.pwd}/db/migrate; ls -d */` ).gsub( /\/$/, '' ).split( "\n" )
       puts "Branches:\n\tdefault"
-      branches.each do | branch_name |
-        puts "\t#{branch_name}"
-      end
+      branches.each { | branch_name | puts("\t#{branch_name}") }
     end
   end
 end
